@@ -73,9 +73,9 @@ void initializeParticles(Particle particles[]) {
         particles[i].y = centerY + (controlY-centerY)/2;
         particles[i].angle = (float)(rand() % 360) * M_PI / 180.0; // Random initial angle
         particles[i].lifetime = 200 + (rand() % 100);  // Random lifetime
-        particles[i].r = 255;
-        particles[i].g = 0;
-        particles[i].b = 0;  // Blue color
+        particles[i].r = 0;
+        particles[i].g = 255;
+        particles[i].b = 255;  // Blue color
     }
 }
 

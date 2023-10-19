@@ -1,3 +1,10 @@
+/////////////////////////////////////////////////////////////////////////////
+// Written By: Ashraful Islam
+// Reg : 2021831014
+// Project link on Github: https://github.com/darkEye-2021831014/Project-2021831014.git
+
+
+
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <iostream>

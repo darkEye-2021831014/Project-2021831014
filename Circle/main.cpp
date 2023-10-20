@@ -1,150 +1,146 @@
-/////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
 // Written By: Ashraful Islam
 // Reg : 2021831014
 // Project link on Github: https://github.com/darkEye-2021831014/Project-2021831014.git
+////////////////////////////////////////////////////////////////////////////////////////
 
 
+#include<SDL2/SDL.h>
+#include<vector>
 
-#include <SDL2/SDL.h>
-#include <stdio.h>
-#include <iostream>
-#include <vector>
 using namespace std;
 
 #define SCREEN_WIDTH 1080
-#define SCREEN_HEIGHT 520
-
-// Global variables
-bool gameIsRunning = false;
+#define SCREEN_HEIGHT 540
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
-int redColorCode = 0;
-Uint32 startTime;
-Uint32 currentTime;
+bool gameIsRunning = false;
+const int radius = 160;
 
-bool initializeWindow(void)
+
+
+bool initializeWindow();
+void processInput(void);
+
+void drawCircle(void);
+void draw(void);
+
+void destroyWindow(void);
+
+
+int main(int argc, char **argv)
 {
-    // Initialize SDL with video support
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    //game loop control variable
+    gameIsRunning = initializeWindow();
+
+    while(gameIsRunning)
+    {
+        processInput();
+        draw();
+    }
+
+    SDL_Log("Game Is Exiting \n");
+    //cleanup everything and exit
+    destroyWindow();
+
+    return 0;
+}
+
+
+
+
+//implimentation of all prototype functions
+
+bool initializeWindow()
+{
+    //intialize sdl with video support
+    if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf("Error: SDL failed to initialize\nSDL Error: '%s'\n", SDL_GetError());
         return false;
     }
 
-    // Create an SDL window
+    //create sdl window
     window = SDL_CreateWindow(
-        "Ashraful Islam-2021831014",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT,
+        "Ashraful-2021831014",
+        SDL_WINDOWPOS_CENTERED, 
+        SDL_WINDOWPOS_CENTERED,
+        SCREEN_WIDTH,SCREEN_HEIGHT,
         0);
-
-    if (!window)
+    
+    if(!window)
     {
-        printf("Error: Failed to open window\nSDL Error: '%s'\n", SDL_GetError());
+        printf("Error: Failed to open window\nSDL Error: '%s'\n",
+        SDL_GetError());
         return false;
     }
 
-    // Create an SDL renderer for rendering graphics in the window
+    //create a SDL renderer to render graphics on window
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer)
+
+    if(!renderer)
     {
-        printf("Error: Failed to create renderer\nSDL Error: '%s'\n", SDL_GetError());
+        printf("Error: failed to create renderer\nSDL Error: '%s'\n", SDL_GetError());
         return false;
     }
+
+    //everything is working fine
     return true;
 }
 
-void process_input(void)
+void processInput(void)
 {
-    // Poll SDL events (e.g., window close)
     SDL_Event event;
-    while (SDL_PollEvent(&event))
+    while(SDL_PollEvent(&event))
     {
-        switch (event.type)
+        switch(event.type)
         {
-        case SDL_QUIT:
-            gameIsRunning = false; // Exit the game loop
-            break;
-
-        default:
-            break;
+            case SDL_QUIT:
+                gameIsRunning = false;
+                break;
+            default:
+                break;
         }
     }
 }
-
 
 void drawCircle(void)
 {
-    vector<SDL_Point> p;
-    int centerX = (SCREEN_WIDTH/2);
-    int centerY = (SCREEN_HEIGHT/2);
-    int r = 160;
-    SDL_Point point;
-    int part = 0, y =centerY, x = 0;
-    while(part != 4)
-    {
-        if(part == 0 || part == 3) 
-        {
-            y--;
-            x = centerX + sqrt(pow(r,2) - pow((y-centerY), 2));
-        }
-        else 
-        {
-            y++;
-            x = centerX - sqrt(pow(r,2) - pow((y-centerY), 2));
-        }
-        point.x = x;
-        point.y = y;
-        p.emplace_back(point);
+    int centerX = SCREEN_WIDTH/2;
+    int centerY = SCREEN_HEIGHT/2;
+    double angle = 0.0 * (M_PI/180);    //convert the angle into radian
 
-        if(y == centerY-r || y == centerY || y == centerY+r) part++;
+    vector<SDL_Point> points;
+    while(angle <= (360*(M_PI/180)))
+    {
+        SDL_Point point;
+        point.x = centerX+ radius*cos(angle);
+        point.y = centerY - radius*sin(angle);
+        points.push_back(point);
+
+        angle += .3 * (M_PI/180);
     }
-    
-    SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
-    SDL_RenderDrawLines(renderer, p.data(), p.size());
+
+    SDL_SetRenderDrawColor(renderer, 0,255,255,255);
+    SDL_RenderDrawLines(renderer, points.data(), points.size());
 }
 
-void draw()
+void draw(void)
 {
-    // Set the render draw color (R, G, B, A)
-    SDL_SetRenderDrawColor(renderer, 10,10,10, 255);
-
-    // Clear the renderer with the specified draw color
+    //set renderer draw color(R,G,B,A) & clear the renderer with that color
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    //Draw a circle
+    //draw a circle
     drawCircle();
 
-    // Present the renderer (draw the frame to the window)
+    //present the renderer(e.g draw the frame to the window)
     SDL_RenderPresent(renderer);
 }
 
 void destroyWindow(void)
 {
-    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(renderer);
     SDL_Quit();
-}
-
-int main(int argc, char **argv)
-{
-    // The game loop control variable
-    gameIsRunning = initializeWindow();
-
-    // Game loop: keep the application running until 'running' is set to false
-    while (gameIsRunning)
-    {
-        // Continuously polls for SDL events
-        process_input();
-
-        // Draw the rendered window
-        draw();
-    }
-
-    // Clean up and exit the application
-    destroyWindow();
-
-    return 0;
 }

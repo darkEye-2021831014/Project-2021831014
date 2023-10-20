@@ -114,7 +114,7 @@ void drawCircle(void)
     while(angle <= (360*(M_PI/180)))
     {
         SDL_Point point;
-        point.x = centerX+ radius*cos(angle);
+        point.x = centerX + radius*cos(angle);
         point.y = centerY - radius*sin(angle);
         points.push_back(point);
 

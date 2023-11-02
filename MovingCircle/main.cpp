@@ -163,7 +163,7 @@ void drawCircle(int X, int Y)
         point.y = Y - r * sin(angle);
         points.push_back(point);
 
-        angle += 1.3 * (M_PI / 180);
+        angle += 6 * (M_PI / 180);
     }
 
     SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);

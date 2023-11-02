@@ -1,51 +1,93 @@
-/////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
 // Written By: Ashraful Islam
 // Reg : 2021831014
 // Project link on Github: https://github.com/darkEye-2021831014/Project-2021831014.git
-
-
-
+////////////////////////////////////////////////////////////////////////////////////////
 
 #include <SDL2/SDL.h>
 #include <stdio.h>
-#include <iostream>
 #include <vector>
 using namespace std;
 
 #define SCREEN_WIDTH 1080
 #define SCREEN_HEIGHT 520
-#define NUM_PARTICLES 10000
+#define NUM_PARTICLES 10000 // particles to create visual effect
 
 // Global variables
 bool gameIsRunning = false;
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
-int redColorCode = 0;
 Uint32 startTime;
 Uint32 currentTime;
+Uint32 elapsedTime;
 const int r = 80;
 double centerX = -r;
-const int centerY = (SCREEN_HEIGHT/2);
-double controlX = (SCREEN_WIDTH/2);
+const int centerY = (SCREEN_HEIGHT / 2);
+double controlX = (SCREEN_WIDTH / 2);
 double controlY = 0.0;
-int flag = 0, ones = 0;
+int flag = 0, centerOfCollision = 0;
 
-bool initializeWindow(void)
+// implimanting visual effect(particle effect)
+typedef struct
 {
-    // Initialize SDL with video support
+    float x, y;    // Position
+    float angle;   // Angle for swirling motion
+    int lifetime;  // How long the particle will exist
+    Uint8 r, g, b; // Color
+} Particle;
+
+bool initializeWindow(void);
+
+void initializeParticles(Particle particles[]);
+void visualEffect(Particle particles[]); // basic wind effect(2d simulation of a tornado)
+
+void drawCircle(int X, int Y);
+void process_input(void);
+void collisionDetection(void);
+void movingCircle(void);
+void draw(Particle particles[]);
+
+void destroyWindow(void);
+
+int main(int argc, char **argv)
+{
+    // The game loop control variable
+    gameIsRunning = initializeWindow();
+    startTime = SDL_GetTicks();
+
+    // initialize particles for visual effect
+    Particle particles[NUM_PARTICLES];
+
+    while (gameIsRunning)
+    {
+        process_input();
+        draw(particles);
+    }
+
+    SDL_Log("Game Is Exiting!\n");
+    // cleanup everything and exit
+    destroyWindow();
+
+    return 0;
+}
+
+// implimentation of all prototype functions
+
+bool initializeWindow()
+{
+    // intialize sdl with video support
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf("Error: SDL failed to initialize\nSDL Error: '%s'\n", SDL_GetError());
         return false;
     }
 
-    // Create an SDL window
+    // create sdl window
     window = SDL_CreateWindow(
-        "Ashraful Islam-2021831014",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT,
+        "Circle",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        SCREEN_WIDTH, SCREEN_HEIGHT,
         0);
 
     if (!window)
@@ -54,116 +96,82 @@ bool initializeWindow(void)
         return false;
     }
 
-    // Create an SDL renderer for rendering graphics in the window
+    // create a SDL renderer to render graphics on window
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
     if (!renderer)
     {
-        printf("Error: Failed to create renderer\nSDL Error: '%s'\n", SDL_GetError());
+        printf("Error: failed to create renderer\nSDL Error: '%s'\n", SDL_GetError());
         return false;
     }
+
+    // everything is working fine
     return true;
 }
 
-
-
-
-//implimanting visual effect(particle effect)
-typedef struct {
-    float x, y;     // Position
-    float angle;    // Angle for swirling motion
-    int lifetime;   // How long the particle will exist
-    Uint8 r, g, b;  // Color
-} Particle;
-
-void initializeParticles(Particle particles[]) {
-    for (int i = 0; i < NUM_PARTICLES; i++) {
-        particles[i].x = centerX + (controlX-centerX) / 2;  // Start at the center
-        particles[i].y = centerY + (controlY-centerY)/2;
+void initializeParticles(Particle particles[])
+{
+    for (int i = 0; i < NUM_PARTICLES; i++)
+    {
+        particles[i].x = centerX + (controlX - centerX) / 2; // Start at the center of collision
+        particles[i].y = centerY + (controlY - centerY) / 2;
         particles[i].angle = (float)(rand() % 360) * M_PI / 180.0; // Random initial angle
-        particles[i].lifetime = 200 + (rand() % 100);  // Random lifetime
+        particles[i].lifetime = 200 + (rand() % 100);              // Random lifetime
         particles[i].r = 0;
         particles[i].g = 255;
-        particles[i].b = 255;  // Blue color
+        particles[i].b = 255;
     }
 }
 
-void visualEffect(Particle particles[])   //basic wind effect(2d simulation of a tornado)
+void visualEffect(Particle particles[]) // basic wind effect(2d simulation of a tornado)
 {
     // Update particles
-    for (int i = 0; i < NUM_PARTICLES; i++) {
-        particles[i].x += cos(particles[i].angle) * 2;  // Move based on angle
+    for (int i = 0; i < NUM_PARTICLES; i++)
+    {
+        particles[i].x += cos(particles[i].angle) * 2; // Move based on angle
         particles[i].y += sin(particles[i].angle) * 2;
-        particles[i].angle += 0.02;  // Increase angle for swirling motion
+        particles[i].angle += 0.02; // Increase angle for swirling motion
         particles[i].lifetime--;
 
-        if (particles[i].lifetime <= 0) {
-            particles[i].x = centerX + (controlX-centerX) / 2;  //reset to center
-            particles[i].y = centerY + (controlY-centerY)/2;
+        if (particles[i].lifetime <= 0)
+        {
+            particles[i].x = centerX + (controlX - centerX) / 2; // reset to center
+            particles[i].y = centerY + (controlY - centerY) / 2;
             particles[i].angle = (float)(rand() % 360) * M_PI / 180.0;
             particles[i].lifetime = 200 + (rand() % 100);
         }
     }
 
-
     // Render particles
-    for (int i = 0; i < NUM_PARTICLES; i++) {
+    for (int i = 0; i < NUM_PARTICLES; i++)
+    {
         SDL_SetRenderDrawColor(renderer, particles[i].r, particles[i].g, particles[i].b, 255);
         SDL_RenderDrawPoint(renderer, particles[i].x, particles[i].y);
     }
     SDL_Delay(8);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-void drawCircle(int X, int Y)   
+void drawCircle(int X, int Y)
 {
-    vector<SDL_Point> p;
-    
-    SDL_Point point;
-    int part = 0, y = Y, x = 0;
-    while(part != 4)
+    double angle = 0.0 * (M_PI / 180); // convert the angle into radian
+
+    vector<SDL_Point> points;
+    while (angle <= (360 * (M_PI / 180)))
     {
-        if(part == 0 || part == 3) 
-        {
-            y--;
-            x = X + sqrt(pow(r,2) - pow((y-Y), 2));
-        }
-        else 
-        {
-            y++;
-            x = X - sqrt(pow(r,2) - pow((y-Y), 2));
-        }
-        point.x = x;
-        point.y = y;
-        p.emplace_back(point);
+        SDL_Point point;
+        point.x = X + r * cos(angle);
+        point.y = Y - r * sin(angle);
+        points.push_back(point);
 
-        if(y == Y-r || y == Y || y == Y+r) part++;
+        angle += 1.3 * (M_PI / 180);
     }
-    
+
     SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
-    SDL_RenderDrawLines(renderer, p.data(), p.size());
-
+    SDL_RenderDrawLines(renderer, points.data(), points.size());
 }
-
-
-
-
-
-
-
 
 void process_input(void)
 {
-    // Poll SDL events (e.g., window close)
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -173,22 +181,22 @@ void process_input(void)
             gameIsRunning = false; // Exit the game loop
             break;
         case SDL_KEYDOWN:
-            if(!flag)
+            if (!flag)
             {
-                switch(event.key.keysym.sym)
+                switch (event.key.keysym.sym)
                 {
-                    case SDLK_UP:
-                        drawCircle(controlX, controlY-=3);
-                        break;
-                    case SDLK_DOWN:
-                        drawCircle(controlX, controlY+=3);
-                        break;
-                    case SDLK_LEFT:
-                        drawCircle(controlX-=3, controlY);
-                        break;
-                    case SDLK_RIGHT:
-                        drawCircle(controlX+=3, controlY);
-                        break;
+                case SDLK_UP:
+                    drawCircle(controlX, controlY -= 5);
+                    break;
+                case SDLK_DOWN:
+                    drawCircle(controlX, controlY += 5);
+                    break;
+                case SDLK_LEFT:
+                    drawCircle(controlX -= 5, controlY);
+                    break;
+                case SDLK_RIGHT:
+                    drawCircle(controlX += 5, controlY);
+                    break;
                 }
             }
             break;
@@ -198,107 +206,74 @@ void process_input(void)
     }
 }
 
-
-
 void collisionDetection(void)
 {
-    //calculate the distance between the center of both circles
-    double centerDistance = sqrt(pow(centerX-controlX, 2)+pow(centerY-controlY,2));
-    if(centerDistance <= 2*r) //collision occured;
+    // calculate the distance between the center of both circles
+    double centerDistance = sqrt(pow(centerX - controlX, 2) + pow(centerY - controlY, 2));
+    if (centerDistance <= 2 * r && !flag) // collision occured;
     {
-        // cout << "Collision Detected!\n";
-        // pause the screen 
+        SDL_Log("Collision Detected!\n");
+        // stop movement for both of the circles
         flag = 1;
-        //set to initial position
-        // centerX = -r;
-        // controlX = (SCREEN_WIDTH/2);
-        // controlY = 0.0;
     }
 }
-
-
 
 void movingCircle(void)
 {
     drawCircle(centerX, centerY);
 
-    centerX+=0.1;
-    if((centerX-r) > SCREEN_WIDTH) centerX = -r;  
+    currentTime = SDL_GetTicks();
+    elapsedTime = (currentTime - startTime); // calculate time in milliseconds
+
+    // change the center of the moving circle by 1 after every 2 milliseconds
+    if (elapsedTime % 2 == 0)
+    {
+        centerX += 1;
+        if ((centerX - r) > SCREEN_WIDTH)
+            centerX = -r;
+    }
 }
-
-
 
 void draw(Particle particles[])
 {
-    // Set the render draw color (R, G, B, A)
-    SDL_SetRenderDrawColor(renderer, 10,10,10, 255);
-
-    // Clear the renderer with the specified draw color
+    // set renderer draw color(R,G,B,A) & clear the renderer with that color
+    SDL_SetRenderDrawColor(renderer, 10, 10, 10, 255);
     SDL_RenderClear(renderer);
 
-    collisionDetection();
+    collisionDetection(); // detect if there is any collision
 
-    if(!flag)  //No Collision
+    if (!flag) // No Collision
     {
-        //Draw a circle
+        // Draw a circle
         movingCircle();
     }
-    else //collision detected
+    else // collision detected
     {
-        if(!ones) 
+        if (!centerOfCollision)
         {
             initializeParticles(particles);
-            ones = 1;
+            centerOfCollision = 1;
         }
         visualEffect(particles);
-        drawCircle(centerX,centerY);
+        drawCircle(centerX, centerY); // moving circle cannot move anymore
     }
 
-    //controlable circle
-    if(controlX > SCREEN_WIDTH || controlX < 0 || controlY < 0 || controlY > SCREEN_HEIGHT) 
+    // controlable circle
+    if (controlX > SCREEN_WIDTH || controlX < 0 || controlY < 0 || controlY > SCREEN_HEIGHT)
     {
-        controlX = (SCREEN_WIDTH/2);
+        // reset the controlable circle to its initial position
+        controlX = (SCREEN_WIDTH / 2);
         controlY = 0;
     }
     drawCircle(controlX, controlY);
-    
 
-    // Present the renderer (draw the frame to the window)
+    // present the renderer(e.g draw the frame to the window)
     SDL_RenderPresent(renderer);
 }
-
-
 
 void destroyWindow(void)
 {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-}
-
-
-
-int main(int argc, char **argv)
-{
-    // The game loop control variable
-    gameIsRunning = initializeWindow();
-
-    //initialize particles for visual effect
-    Particle particles[NUM_PARTICLES];
-    
-
-    // Game loop: keep the application running until 'running' is set to false
-    while (gameIsRunning)
-    {
-        // Continuously polls for SDL events
-        process_input();
-
-        // Draw the rendered window
-        draw(particles);
-    }
-
-    // Clean up and exit the application
-    destroyWindow();
-
-    return 0;
 }
